@@ -1,0 +1,17 @@
+CREATE DATABASE skilltrack;
+
+USE skilltrack;
+
+CREATE TABLE students(
+
+id INT PRIMARY KEY AUTO_INCREMENT,
+
+username VARCHAR(100) UNIQUE,
+
+email VARCHAR(150) UNIQUE,
+
+password VARCHAR(255),
+
+created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+);
