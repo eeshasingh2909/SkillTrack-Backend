@@ -12,8 +12,9 @@ app.config.from_object(Config)
 db.init_app(app)
 JWTManager(app)
 
-# Allow requests from the Vite dev server (port 3000 — 5173 is used by Apple AirTunes)
-CORS(app, resources={r"/api/*": {"origins": "http://localhost:3000"}})
+# Allow all localhost origins during development
+# Covers: Vite on 3000, 5173, or any other port it picks
+CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 # ── Error handlers ────────────────────────────────────────────────────────────
 @app.errorhandler(404)
@@ -42,4 +43,4 @@ with app.app_context():
     db.create_all()
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, port=5001)  # Use 5001 — port 5000 may be taken by AirPlay on macOS
