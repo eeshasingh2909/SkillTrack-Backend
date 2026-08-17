@@ -1,6 +1,7 @@
 import requests
 from urllib.parse import urlparse
-
+from models.skill import Skill
+from app import db
 
 GITHUB_API = "https://api.github.com"
 
@@ -172,3 +173,51 @@ def extract_github_skills(username):
             skills.add(language)
 
     return sorted(skills)
+
+def save_github_skills(user_id, github_skills):
+    """
+    Save GitHub-derived skills for a user.
+
+    Existing skills are preserved.
+    Only skills that do not already exist are inserted.
+
+    Returns a list containing the newly added skill names.
+    """
+
+    existing_skills = Skill.query.filter_by(
+        user_id=user_id
+    ).all()
+
+    existing_skill_names = {
+        skill.skill_name.lower()
+        for skill in existing_skills
+    }
+
+    new_skills = []
+
+    for skill_name in github_skills:
+
+        normalized_name = skill_name.strip()
+
+        if not normalized_name:
+            continue
+
+        if normalized_name.lower() in existing_skill_names:
+            continue
+
+        skill = Skill(
+            user_id=user_id,
+            skill_name=normalized_name
+        )
+
+        db.session.add(skill)
+
+        new_skills.append(normalized_name)
+
+        existing_skill_names.add(
+            normalized_name.lower()
+        )
+
+    db.session.commit()
+
+    return new_skills
