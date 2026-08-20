@@ -4,7 +4,7 @@ from flask_jwt_extended import JWTManager
 from routes.github_routes import github_bp
 from config import Config
 from models import db
-
+from routes.analytics import analytics
 app = Flask(__name__)
 app.config.from_object(Config)
 app.register_blueprint(github_bp)
@@ -38,6 +38,10 @@ app.register_blueprint(profile,   url_prefix="/api")
 app.register_blueprint(project,   url_prefix="/api")
 app.register_blueprint(dashboard, url_prefix="/api")
 app.register_blueprint(skill,     url_prefix="/api")
+app.register_blueprint(
+    analytics,
+    url_prefix="/api"
+)
 
 # ── DB init ───────────────────────────────────────────────────────────────────
 with app.app_context():
