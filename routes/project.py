@@ -4,6 +4,13 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from models import db
 from models.project import Project
 
+from services.github_service import (
+    extract_github_username,
+    extract_github_projects,
+    save_github_projects,
+    GitHubAPIError
+)
+
 project = Blueprint("project", __name__)
 
 
@@ -37,7 +44,112 @@ def projects():
     db.session.commit()
 
     return jsonify(_project_dict(new_project)), 201
+# ── POST /api/projects/github-import ─────────────────────────────────────────
 
+@project.route(
+    "/projects/github-import",
+    methods=["POST"]
+)
+@jwt_required()
+def import_github_projects():
+
+    try:
+
+        # Get logged-in user from JWT
+        user_id = int(
+            get_jwt_identity()
+        )
+
+        # Get request data
+        data = request.get_json(
+            silent=True
+        ) or {}
+
+        github_url = data.get(
+            "github_url",
+            ""
+        ).strip()
+
+        if not github_url:
+            return jsonify({
+                "error":
+                    "github_url is required"
+            }), 400
+
+
+        # Extract GitHub username
+        github_username = (
+            extract_github_username(
+                github_url
+            )
+        )
+
+        if not github_username:
+
+            return jsonify({
+                "error": (
+                    "Invalid GitHub profile URL. "
+                    "Example: "
+                    "https://github.com/username"
+                )
+            }), 400
+
+
+        # Extract repositories
+        github_projects = (
+            extract_github_projects(
+                github_username
+            )
+        )
+
+
+        # Save new projects
+        new_projects = (
+            save_github_projects(
+                user_id,
+                github_projects
+            )
+        )
+
+
+        return jsonify({
+
+            "message":
+                "GitHub projects imported successfully",
+
+            "github_username":
+                github_username,
+
+            "total_detected_projects":
+                len(github_projects),
+
+            "new_projects":
+                new_projects
+
+        }), 200
+
+
+    except GitHubAPIError as e:
+
+        return jsonify({
+            "error": str(e)
+        }), 400
+
+
+    except Exception as e:
+
+        print(
+            "GitHub Project Import Error:",
+            str(e)
+        )
+
+        return jsonify({
+            "error":
+                "Internal server error",
+
+            "details":
+                str(e)
+        }), 500
 
 # ── DELETE /api/projects/<id> ─────────────────────────────────────────────────
 @project.route("/projects/<int:project_id>", methods=["DELETE"])
