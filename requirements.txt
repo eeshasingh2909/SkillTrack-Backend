@@ -5,3 +5,4 @@ flask-cors==6.0.5
 pymysql==1.2.0
 werkzeug==3.1.8
 requests==2.32.4
+python-dotenv==1.2.3

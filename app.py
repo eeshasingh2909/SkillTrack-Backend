@@ -1,17 +1,16 @@
 from flask import Flask, jsonify
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
-from routes.github_routes import github_bp
+
 from config import Config
 from models import db
-from routes.analytics import analytics
+
 app = Flask(__name__)
 app.config.from_object(Config)
-app.register_blueprint(github_bp)
 
 # ── Extensions ────────────────────────────────────────────────────────────────
 db.init_app(app)
-jwt=JWTManager(app)
+JWTManager(app)
 
 # Allow all localhost origins during development
 # Covers: Vite on 3000, 5173, or any other port it picks
@@ -32,15 +31,18 @@ from routes.profile import profile
 from routes.project import project
 from routes.dashboard import dashboard
 from routes.skill import skill
-from routes.feedback import feedback #new addition
+from routes.feedback import feedback
+from routes.analytics import analytics
+from routes.github_routes import github_bp
 
 app.register_blueprint(auth,      url_prefix="/api/auth")
 app.register_blueprint(profile,   url_prefix="/api")
 app.register_blueprint(project,   url_prefix="/api")
 app.register_blueprint(dashboard, url_prefix="/api")
 app.register_blueprint(skill,     url_prefix="/api")
-app.register_blueprint(feedback,  url_prefix="/api") #new addition
+app.register_blueprint(feedback,  url_prefix="/api")
 app.register_blueprint(analytics, url_prefix="/api")
+app.register_blueprint(github_bp)
 
 # ── DB init ───────────────────────────────────────────────────────────────────
 with app.app_context():

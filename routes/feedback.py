@@ -16,15 +16,12 @@ feedback = Blueprint("feedback", __name__)
 def create_feedback():
 
     user_id = int(get_jwt_identity())
+    data    = request.get_json(silent=True) or {}
 
-    data = request.get_json(silent=True) or {}
-
-    rating          = data.get("rating")
+    rating           = data.get("rating")
     positive_comment = data.get("positive_comment")
-    feedback_text   = data.get("feedback")
-    feedback_type   = data.get("feedback_type")
-
-    # ── Validation ────────────────────────────────────────────────────────────
+    feedback_text    = data.get("feedback")
+    feedback_type    = data.get("feedback_type")
 
     if rating is None:
         return jsonify({"error": "Rating is required"}), 400
@@ -41,8 +38,6 @@ def create_feedback():
         return jsonify({
             "error": f"feedback_type must be one of: {', '.join(FEEDBACK_TYPES)}"
         }), 400
-
-    # ── Create feedback ───────────────────────────────────────────────────────
 
     new_feedback = Feedback(
         user_id=user_id,
@@ -62,12 +57,12 @@ def create_feedback():
 
 
 # ── GET /api/feedback ─────────────────────────────────────────────────────────
-# Returns the latest feedback per user for footer cards (auth required)
+# Returns summary stats + latest-per-user cards for the dashboard footer
 @feedback.route("/feedback", methods=["GET"])
 @jwt_required()
 def get_feedback():
 
-    # Subquery: latest created_at per user
+    # Latest submission per user
     latest_per_user = (
         db.session.query(
             Feedback.user_id,
@@ -77,7 +72,6 @@ def get_feedback():
         .subquery()
     )
 
-    # Join back to get the full feedback row + username
     rows = (
         db.session.query(
             User.username,
@@ -85,21 +79,31 @@ def get_feedback():
             Feedback.positive_comment,
             Feedback.created_at,
         )
-        .join(latest_per_user, (Feedback.user_id == latest_per_user.c.user_id) &
-                                (Feedback.created_at == latest_per_user.c.latest_at))
+        .join(latest_per_user,
+              (Feedback.user_id == latest_per_user.c.user_id) &
+              (Feedback.created_at == latest_per_user.c.latest_at))
         .join(User, User.id == Feedback.user_id)
         .order_by(Feedback.created_at.desc())
         .all()
     )
 
-    result = [
+    cards = [
         {
             "username":         row.username,
             "rating":           row.rating,
             "positive_comment": row.positive_comment,
-            "created_at":       row.created_at.isoformat() if row.created_at else None,
         }
         for row in rows
     ]
 
-    return jsonify(result), 200
+    unique_users   = len(cards)
+    average_rating = (
+        round(sum(c["rating"] for c in cards) / unique_users, 1)
+        if unique_users > 0 else None
+    )
+
+    return jsonify({
+        "unique_users":   unique_users,
+        "average_rating": average_rating,
+        "cards":          cards,
+    }), 200
