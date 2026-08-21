@@ -31,12 +31,18 @@ from routes.profile import profile
 from routes.project import project
 from routes.dashboard import dashboard
 from routes.skill import skill
+from routes.feedback import feedback
+from routes.analytics import analytics
+from routes.github_routes import github_bp
 
 app.register_blueprint(auth,      url_prefix="/api/auth")
 app.register_blueprint(profile,   url_prefix="/api")
 app.register_blueprint(project,   url_prefix="/api")
 app.register_blueprint(dashboard, url_prefix="/api")
 app.register_blueprint(skill,     url_prefix="/api")
+app.register_blueprint(feedback,  url_prefix="/api")
+app.register_blueprint(analytics, url_prefix="/api")
+app.register_blueprint(github_bp)
 
 # ── DB init ───────────────────────────────────────────────────────────────────
 with app.app_context():
